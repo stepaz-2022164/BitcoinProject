@@ -13,12 +13,27 @@ public class ScriptInterpreter {
         this.stack = new ArrayDeque<>();
         this.trace = trace;
         this.opcodeMap = new HashMap<>();
-        initOpcodes(); // Llenamos el mapa al iniciar
+        initOpcodes();
     }
 
     private void initOpcodes() {
         opcodeMap.put("OP_0", () -> { stack.push(new byte[]{0}); return true; });
         opcodeMap.put("OP_1", () -> { stack.push(new byte[]{1}); return true; });
+        opcodeMap.put("OP_2", () -> { stack.push(new byte[]{2}); return true; });
+        opcodeMap.put("OP_3", () -> { stack.push(new byte[]{3}); return true; });
+        opcodeMap.put("OP_4", () -> { stack.push(new byte[]{4}); return true; });
+        opcodeMap.put("OP_5", () -> { stack.push(new byte[]{5}); return true; });
+        opcodeMap.put("OP_6", () -> { stack.push(new byte[]{6}); return true; });
+        opcodeMap.put("OP_7", () -> { stack.push(new byte[]{7}); return true; });
+        opcodeMap.put("OP_8", () -> { stack.push(new byte[]{8}); return true; });
+        opcodeMap.put("OP_9", () -> { stack.push(new byte[]{9}); return true; });
+        opcodeMap.put("OP_10", () -> { stack.push(new byte[]{10}); return true; });
+        opcodeMap.put("OP_11", () -> { stack.push(new byte[]{11}); return true; });
+        opcodeMap.put("OP_12", () -> { stack.push(new byte[]{12}); return true; });
+        opcodeMap.put("OP_13", () -> { stack.push(new byte[]{13}); return true; });
+        opcodeMap.put("OP_14", () -> { stack.push(new byte[]{14}); return true; });
+        opcodeMap.put("OP_15", () -> { stack.push(new byte[]{15}); return true; });
+        opcodeMap.put("OP_16", () -> { stack.push(new byte[]{16}); return true; });
 
         opcodeMap.put("OP_DUP", this::opDup);
         opcodeMap.put("OP_DROP", this::opDrop);
@@ -31,6 +46,9 @@ public class ScriptInterpreter {
 
         opcodeMap.put("OP_HASH160", this::opHash160);
         opcodeMap.put("OP_CHECKSIG", this::opCheckSig);
+
+        opcodeMap.put("OP_ADD", this::opAdd);
+        opcodeMap.put("OP_SUB", this::opSub);
     }
 
     public boolean execute(List<String> script) {
@@ -120,5 +138,27 @@ public class ScriptInterpreter {
             }
         }
         System.out.println("--------------");
+    }
+
+    private boolean opAdd() {
+        if (stack.size() < 2) return false;
+
+        int b = Integer.parseInt(new String(stack.pop()));
+        int a = Integer.parseInt(new String(stack.pop()));
+
+        int resultado = a + b;
+        stack.push(String.valueOf(resultado).getBytes());
+        return true;
+    }
+
+    private boolean opSub() {
+        if (stack.size() < 2) return false;
+
+        int b = Integer.parseInt(new String(stack.pop()));
+        int a = Integer.parseInt(new String(stack.pop()));
+
+        int resultado = a - b;
+        stack.push(String.valueOf(resultado).getBytes());
+        return true;
     }
 }

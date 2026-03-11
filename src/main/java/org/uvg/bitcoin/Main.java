@@ -28,5 +28,19 @@ public class Main {
         boolean result = interpreter.execute(fullScript);
 
         System.out.println("Resultado de validación P2PKH: " + (result ? "EXITOSA" : "FALLIDA"));
+
+        System.out.println("\n--- Avance Fase 2");
+        List<String> scriptMath = Arrays.asList(
+                "5", "7",
+                "OP_ADD",
+                "12",
+                "OP_EQUAL"
+        );
+
+        System.out.println("Ejecutando script matemático: " + scriptMath);
+        ScriptInterpreter mathInterpreter = new ScriptInterpreter(true);
+        boolean mathResult = mathInterpreter.execute(scriptMath);
+
+        System.out.println("Resultado de la prueba matemática: " + (mathResult ? "EXITOSA" : "FALLIDA"));
     }
 }
