@@ -1,4 +1,4 @@
-# Intérprete de Bitcoin Script - Proyecto 1.
+# Intérprete de Bitcoin Script - Proyecto 1
 
 Este proyecto implementa un intérprete simplificado del lenguaje de script de Bitcoin utilizando Java. Permite simular el proceso de validación de transacciones P2PKH (Pay-to-Public-Key-Hash) en un entorno académico.
 
