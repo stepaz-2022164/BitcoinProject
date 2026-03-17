@@ -5,8 +5,27 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Clase principal del programa.
+ *
+ * Se encarga de ejecutar ejemplos de scripts de Bitcoin Script
+ * para demostrar el funcionamiento del intérprete.
+ *
+ * Incluye:
+ * - Prueba de validación P2PKH
+ * - Prueba de operaciones matemáticas
+ */
 public class Main {
+
+    /**
+     * Punto de entrada del programa.
+     *
+     * Ejecuta scripts de prueba y muestra los resultados en consola.
+     *
+     * @param args argumentos de línea de comandos (no utilizados).
+     */
     public static void main(String[] args) {
+
         System.out.println("--- Prueba P2PKH ---");
 
         List<String> scriptSig = Arrays.asList("VALID_SIGNATURE", "PUBKEY_123");
@@ -30,6 +49,7 @@ public class Main {
         System.out.println("Resultado de validación P2PKH: " + (result ? "EXITOSA" : "FALLIDA"));
 
         System.out.println("\n--- Avance Fase 2");
+
         List<String> scriptMath = Arrays.asList(
                 "5", "7",
                 "OP_ADD",
@@ -38,6 +58,7 @@ public class Main {
         );
 
         System.out.println("Ejecutando script matemático: " + scriptMath);
+
         ScriptInterpreter mathInterpreter = new ScriptInterpreter(true);
         boolean mathResult = mathInterpreter.execute(scriptMath);
 
