@@ -102,8 +102,8 @@ public class ScriptInterpreter {
         }
 
         if (!executionStack.isEmpty()) return false;
-
-        return !stack.isEmpty() && isTrue(stack.peek());
+        if (stack.isEmpty()) return true;
+        return isTrue(stack.peek());
     }
 
     private boolean processToken(String token) {
