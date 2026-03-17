@@ -133,7 +133,7 @@ public class ScriptInterpreter {
         }
 
         if (!executionStack.isEmpty()) return false;
-        if (stack.isEmpty()) return false;
+        if (stack.isEmpty()) return true;
 
         return isTrue(stack.peek());
     }
