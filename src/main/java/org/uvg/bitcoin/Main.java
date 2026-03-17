@@ -4,43 +4,55 @@ import org.uvg.bitcoin.script.ScriptInterpreter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Scanner;
+import java.io.File;
+import java.io.FileNotFoundException;
 
 public class Main {
     public static void main(String[] args) {
-        System.out.println("--- Prueba P2PKH ---");
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("=== INTÉRPRETE DE BITCOIN SCRIPT (GRUPO 9) ===");
+        System.out.println("Seleccione el método de entrada:");
+        System.out.println("1. Escribir script en consola");
+        System.out.println("2. Leer script desde archivo (todo en una sola linea)");
+        System.out.print("Opción: ");
 
-        List<String> scriptSig = Arrays.asList("VALID_SIGNATURE", "PUBKEY_123");
+        String opcion = scanner.nextLine();
+        String scriptCrudo = "";
 
-        List<String> scriptPubKey = Arrays.asList(
-                "OP_DUP",
-                "OP_HASH160",
-                "HASH160_PUBKEY_123",
-                "OP_EQUALVERIFY",
-                "OP_CHECKSIG"
-        );
+        if (opcion.equals("1")) {
+            System.out.println("\nIngrese el script completo (scriptSig seguido de scriptPubKey) separado por espacios:");
+            System.out.println("Ejemplo: VALID_SIGNATURE PUBKEY_123 OP_DUP OP_HASH160 HASH160_PUBKEY_123 OP_EQUALVERIFY OP_CHECKSIG");
+            System.out.print("> ");
+            scriptCrudo = scanner.nextLine();
 
-        List<String> fullScript = new ArrayList<>(scriptSig);
-        fullScript.addAll(scriptPubKey);
+        } else if (opcion.equals("2")) {
+            String ruta = "script.txt";
+            try {
+                File archivo = new File(ruta);
+                Scanner lectorArchivo = new Scanner(archivo);
+                if (lectorArchivo.hasNextLine()) {
+                    scriptCrudo = lectorArchivo.nextLine();
+                }
+                lectorArchivo.close();
+                System.out.println("Script leído del archivo exitosamente.");
+            } catch (FileNotFoundException e) {
+                System.out.println("Error: No se encontró el archivo. Asegúrese de que la ruta sea correcta.");
+                return;
+            }
+        } else {
+            System.out.println("Opción no válida. Saliendo...");
+            return;
+        }
+        scriptCrudo = scriptCrudo.trim();
+        List<String> fullScript = new ArrayList<>(Arrays.asList(scriptCrudo.split("\\s+")));
 
-        System.out.println("Ejecutando Script: " + fullScript);
-
+        System.out.println("\n--- Ejecutando Script ---");
+        System.out.println("Tokens: " + fullScript);
         ScriptInterpreter interpreter = new ScriptInterpreter(true);
         boolean result = interpreter.execute(fullScript);
 
-        System.out.println("Resultado de validación P2PKH: " + (result ? "EXITOSA" : "FALLIDA"));
-
-        System.out.println("\n--- Avance Fase 2");
-        List<String> scriptMath = Arrays.asList(
-                "5", "7",
-                "OP_ADD",
-                "12",
-                "OP_EQUAL"
-        );
-
-        System.out.println("Ejecutando script matemático: " + scriptMath);
-        ScriptInterpreter mathInterpreter = new ScriptInterpreter(true);
-        boolean mathResult = mathInterpreter.execute(scriptMath);
-
-        System.out.println("Resultado de la prueba matemática: " + (mathResult ? "EXITOSA" : "FALLIDA"));
+        System.out.println("\nResultado Final de Validación: " + (result ? "EXITOSA (TRUE)" : "FALLIDA (FALSE)"));
+        scanner.close();
     }
 }
