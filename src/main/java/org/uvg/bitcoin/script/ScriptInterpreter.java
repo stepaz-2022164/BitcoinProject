@@ -76,7 +76,7 @@ public class ScriptInterpreter {
      */
     private void addOp(int value) {
         opcodeMap.put("OP_" + value, () -> {
-            stack.push(new byte[]{(byte) value});
+            stack.push(String.valueOf(value).getBytes());
             return true;
         });
     }
@@ -199,11 +199,8 @@ public class ScriptInterpreter {
         if (stack.size() < 2) return false;
         byte[] a = stack.pop();
         byte[] b = stack.pop();
-
         boolean result = Arrays.equals(a, b);
-
-        stack.push(result ? new byte[]{1} : new byte[]{0});
-
+        stack.push(result ? "1".getBytes() : "0".getBytes());
         return true;
     }
 
@@ -244,7 +241,7 @@ public class ScriptInterpreter {
         byte[] pubKey = stack.pop();
         byte[] signature = stack.pop();
         boolean valid = new String(signature).contains("VALID");
-        stack.push(valid ? new byte[]{1} : new byte[]{0});
+        stack.push(valid ? "1".getBytes() : "0".getBytes());
         return true;
     }
 
@@ -353,10 +350,8 @@ public class ScriptInterpreter {
      */
     private boolean isTrue(byte[] value) {
         if (value.length == 0) return false;
-        for (byte b : value) {
-            if (b != 0) return true;
-        }
-        return false;
+        String s = new String(value).trim();
+        return !s.isEmpty() && !s.equals("0") && !s.equals("\u0000");
     }
 
     /**

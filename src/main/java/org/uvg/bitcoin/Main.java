@@ -16,7 +16,7 @@ public class Main {
         while (true) {
             System.out.println("\nSeleccione el método de entrada:");
             System.out.println("1. Escribir script en consola");
-            System.out.println("2. Leer script desde archivo (todo en una sola linea)");
+            System.out.println("2. Leer script desde archivo script.txt (todo en una sola linea)");
             System.out.println("3. Salir");
             System.out.print("Opción: ");
 
