@@ -49,6 +49,11 @@ public class ScriptInterpreter {
 
         opcodeMap.put("OP_ADD", this::opAdd);
         opcodeMap.put("OP_SUB", this::opSub);
+        opcodeMap.put("OP_LESSTHAN", this::opLessThan);
+        opcodeMap.put("OP_GREATERTHAN", this::opGreaterThan);
+        opcodeMap.put("OP_NOT", this::opNot);
+        opcodeMap.put("OP_BOOLAND", this::opBoolAnd);
+        opcodeMap.put("OP_BOOLOR", this::opBoolOr);
     }
 
     public boolean execute(List<String> script) {
@@ -72,7 +77,6 @@ public class ScriptInterpreter {
         stack.push(token.getBytes());
         return true;
     }
-
 
     private boolean opDup() {
         if (stack.isEmpty()) return false;
@@ -140,25 +144,79 @@ public class ScriptInterpreter {
         System.out.println("--------------");
     }
 
+    private int toInt(byte[] val) {
+        return Integer.parseInt(new String(val));
+    }
+
+    private byte[] fromInt(int val) {
+        return String.valueOf(val).getBytes();
+    }
+
     private boolean opAdd() {
         if (stack.size() < 2) return false;
 
-        int b = Integer.parseInt(new String(stack.pop()));
-        int a = Integer.parseInt(new String(stack.pop()));
+        int b = toInt(stack.pop());
+        int a = toInt(stack.pop());
 
-        int resultado = a + b;
-        stack.push(String.valueOf(resultado).getBytes());
+        stack.push(fromInt(a + b));
         return true;
     }
 
     private boolean opSub() {
         if (stack.size() < 2) return false;
 
-        int b = Integer.parseInt(new String(stack.pop()));
-        int a = Integer.parseInt(new String(stack.pop()));
+        int b = toInt(stack.pop());
+        int a = toInt(stack.pop());
 
-        int resultado = a - b;
-        stack.push(String.valueOf(resultado).getBytes());
+        stack.push(fromInt(a - b));
+        return true;
+    }
+
+    private boolean opLessThan() {
+        if (stack.size() < 2) return false;
+
+        int b = toInt(stack.pop());
+        int a = toInt(stack.pop());
+
+        stack.push(fromInt(a < b ? 1 : 0));
+        return true;
+    }
+
+    private boolean opGreaterThan() {
+        if (stack.size() < 2) return false;
+
+        int b = toInt(stack.pop());
+        int a = toInt(stack.pop());
+
+        stack.push(fromInt(a > b ? 1 : 0));
+        return true;
+    }
+
+    private boolean opNot() {
+        if (stack.isEmpty()) return false;
+
+        int val = toInt(stack.pop());
+        stack.push(fromInt(val == 0 ? 1 : 0));
+        return true;
+    }
+
+    private boolean opBoolAnd() {
+        if (stack.size() < 2) return false;
+
+        int b = toInt(stack.pop());
+        int a = toInt(stack.pop());
+
+        stack.push(fromInt((a != 0 && b != 0) ? 1 : 0));
+        return true;
+    }
+
+    private boolean opBoolOr() {
+        if (stack.size() < 2) return false;
+
+        int b = toInt(stack.pop());
+        int a = toInt(stack.pop());
+
+        stack.push(fromInt((a != 0 || b != 0) ? 1 : 0));
         return true;
     }
 }
