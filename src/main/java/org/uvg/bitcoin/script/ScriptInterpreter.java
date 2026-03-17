@@ -8,11 +8,13 @@ public class ScriptInterpreter {
     private final Deque<byte[]> stack;
     private final boolean trace;
     private final Map<String, Supplier<Boolean>> opcodeMap;
+    private final boolean stepByStep;
 
-    public ScriptInterpreter(boolean trace) {
+    public ScriptInterpreter(boolean trace, boolean stepByStep) {
         this.stack = new ArrayDeque<>();
         this.trace = trace;
         this.opcodeMap = new HashMap<>();
+        this.stepByStep = stepByStep;
         initOpcodes();
     }
 
@@ -97,7 +99,18 @@ public class ScriptInterpreter {
             }
 
             if (trace) {
+                System.out.println("\n>>> Procesando: " + token);
                 printStack();
+
+                if (stepByStep) {
+                    System.out.print("Presione [Enter] para el siguiente paso...");
+                    try {
+                        System.in.read();
+                        while(System.in.available() > 0) {
+                            System.in.read();
+                        }
+                    } catch (Exception e) { }
+                }
             }
         }
 
