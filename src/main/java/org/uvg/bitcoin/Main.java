@@ -9,6 +9,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
+/**
+ * Clase principal que provee la interfaz interactiva de consola
+ * para interactuar con el intérprete de Bitcoin Script y ejecutar
+ * demostraciones funcionales.
+ */
 public class Main {
 
     /**
@@ -107,8 +112,13 @@ public class Main {
         }
     }
 
+    /**
+     * Ejecuta una demostración de validación de transacciones P2PKH (Pay-to-Public-Key-Hash).
+     * Enseña el comportamiento con un caso exitoso y dos escenarios de falla (firma inválida
+     * y hash de clave pública incorrecto).
+     */
     private static void runP2PKHDemo() {
-        System.out.println("\n📋 DEMO P2PKH — Pay-to-PubKey-Hash");
+        System.out.println("\nDEMO P2PKH — Pay-to-PubKey-Hash");
         System.out.println("Formato: scriptSig + scriptPubKey ejecutados en conjunto.");
         System.out.println("  scriptSig:    <firma> <pubKey>");
         System.out.println("  scriptPubKey: OP_DUP OP_HASH160 <pubKeyHash> OP_EQUALVERIFY OP_CHECKSIG");
@@ -148,9 +158,12 @@ public class Main {
         System.out.println("\n------------------------------------------------");
     }
 
-
+    /**
+     * Ejecuta una demostración del uso de estructuras de control (condicionales)
+     * dentro de Bitcoin Script evaluando OP_IF, OP_ELSE y OP_ENDIF simples y anidados.
+     */
     private static void runConditionalDemo() {
-        System.out.println("\n📋 DEMO CONDICIONALES");
+        System.out.println("\n DEMO CONDICIONALES");
 
         System.out.println("\n--- CASO 1: IF simple (verdadero) ---");
         List<String> script1 = Arrays.asList("OP_1", "OP_IF", "OP_42", "OP_ENDIF");
@@ -203,8 +216,12 @@ public class Main {
         System.out.println("\n------------------------------------------------");
     }
 
+    /**
+     * Ejecuta una demostración orientada a comprobar el comportamiento de las operaciones
+     * aritméticas, de comparación y de igualdad estricta en el intérprete.
+     */
     private static void runArithmeticDemo() {
-        System.out.println("\n📋 DEMO OPERACIONES ARITMÉTICAS");
+        System.out.println("\n DEMO OPERACIONES ARITMÉTICAS");
 
         System.out.println("\n--- SUMA: 5 + 3 = 8 ---");
         List<String> suma = Arrays.asList("OP_5", "OP_3", "OP_ADD");
@@ -227,6 +244,11 @@ public class Main {
         ejecutarDemo(igual);
     }
 
+    /**
+     * Método auxiliar para ejecutar los scripts de las demostraciones y mostrar resultados uniformes.
+     *
+     * @param script La lista de tokens e instrucciones a ser ejecutada por el intérprete.
+     */
     private static void ejecutarDemo(List<String> script) {
         System.out.println("Script: " + script);
         ScriptInterpreter interp = new ScriptInterpreter(true, false);

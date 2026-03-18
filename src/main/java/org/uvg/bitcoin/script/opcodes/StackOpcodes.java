@@ -13,6 +13,10 @@ public class StackOpcodes {
     /**
      * OP_DUP: Duplica el elemento superior de la pila.
      * Antes: [x] → Después: [x, x]
+     *
+     * @param ctx   El contexto de ejecución de la máquina virtual.
+     * @param utils Clase de utilidades para operar conversiones de arreglos.
+     * @return true si la operación es exitosa, false si la pila está vacía.
      */
     public static boolean dup(ExecutionContext ctx, ScriptUtils utils) {
         if (ctx.isStackEmpty()) {
@@ -26,6 +30,10 @@ public class StackOpcodes {
     /**
      * OP_DROP: Elimina el elemento superior de la pila.
      * Antes: [x, ...] → Después: [...]
+     *
+     * @param ctx   El contexto de ejecución actual.
+     * @param utils Clase de utilidades auxiliar.
+     * @return true si la operación es exitosa, false si no hay datos a eliminar.
      */
     public static boolean drop(ExecutionContext ctx, ScriptUtils utils) {
         if (ctx.isStackEmpty()) {
@@ -38,6 +46,10 @@ public class StackOpcodes {
     /**
      * OP_SWAP: Intercambia los dos elementos superiores.
      * Antes: [x1, x2, ...] → Después: [x2, x1, ...]
+     *
+     * @param ctx   El contexto de ejecución actual.
+     * @param utils Clase de utilidades auxiliar.
+     * @return true si el intercambio fue exitoso, false si hay menos de dos elementos.
      */
     public static boolean swap(ExecutionContext ctx, ScriptUtils utils) {
         if (ctx.stackSize() < 2) {
@@ -53,6 +65,10 @@ public class StackOpcodes {
     /**
      * OP_OVER: Copia el segundo elemento a la cima.
      * Antes: [x1, x2, ...] → Después: [x1, x2, x1, ...]
+     *
+     * @param ctx   El contexto de ejecución actual.
+     * @param utils Clase de utilidades auxiliar.
+     * @return true si la operación es exitosa, false si la pila tiene menos de 2 elementos.
      */
     public static boolean over(ExecutionContext ctx, ScriptUtils utils) {
         if (ctx.stackSize() < 2) {

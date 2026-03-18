@@ -138,6 +138,9 @@ public class ScriptInterpreter {
 
     /**
      * Maneja OP_IF y OP_NOTIF.
+     *
+     * @param token El comando condicional a evaluar (OP_IF o OP_NOTIF).
+     * @return true si pudo evaluar correctamente la instrucción, false si hay errores como pila vacía.
      */
     private boolean handleIf(String token) {
         context.pushIf(context.isExecuting());
@@ -172,6 +175,8 @@ public class ScriptInterpreter {
 
     /**
      * Maneja OP_ELSE.
+     *
+     * @return true si OP_ELSE se ejecutó dentro de un bloque condicional válido, false si no hay un OP_IF previo.
      */
     private boolean handleElse() {
         if (context.isIfStackEmpty()) {
@@ -195,6 +200,8 @@ public class ScriptInterpreter {
 
     /**
      * Maneja OP_ENDIF.
+     *
+     * @return true si se cerró correctamente un bloque condicional, false si no había bloque abierto.
      */
     private boolean handleEndIf() {
         if (context.isIfStackEmpty()) {
@@ -217,6 +224,9 @@ public class ScriptInterpreter {
 
     /**
      * Procesa un token individual (opcode o dato).
+     *
+     * @param token Cadena que representa el opcode o dato literal a ejecutar/empujar.
+     * @return true si el opcode finalizó sin errores o si el dato se empujó a la pila, false en fallos lógicos del opcode.
      */
     private boolean processToken(String token) {
         Opcode opcode = opcodeRegistry.getOpcode(token);
@@ -256,6 +266,8 @@ public class ScriptInterpreter {
 
     /**
      * Obtiene el tamaño actual de la pila (útil para pruebas).
+     *
+     * @return la cantidad actual de elementos disponibles en la pila.
      */
     public int getStackSize() {
         return context.stackSize();

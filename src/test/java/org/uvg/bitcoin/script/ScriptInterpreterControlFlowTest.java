@@ -20,6 +20,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class ScriptInterpreterControlFlowTest {
 
+    /**
+     * Comprueba que OP_VERIFY no trunque la ejecución cuando lee un valor verdadero ('1').
+     */
     @Test
     void verifyTrueShouldPass() {
         ScriptInterpreter interpreter = new ScriptInterpreter(false);
@@ -27,6 +30,9 @@ public class ScriptInterpreterControlFlowTest {
         assertTrue(interpreter.execute(script));
     }
 
+    /**
+     * Verifica que OP_VERIFY falle y devuelva falso al encontrar un valor '0' en el top de la pila.
+     */
     @Test
     void verifyFalseShouldFail() {
         ScriptInterpreter interpreter = new ScriptInterpreter(false);
@@ -34,6 +40,9 @@ public class ScriptInterpreterControlFlowTest {
         assertFalse(interpreter.execute(script));
     }
 
+    /**
+     * Asegura que el uso de OP_RETURN corte siempre la ejecución retornando falso.
+     */
     @Test
     void opReturnShouldAlwaysFail() {
         ScriptInterpreter interpreter = new ScriptInterpreter(false);
@@ -41,6 +50,9 @@ public class ScriptInterpreterControlFlowTest {
         assertFalse(interpreter.execute(script));
     }
 
+    /**
+     * Valida la ejecución correcta de los comandos dentro de un bloque OP_IF con una condición verdadera.
+     */
     @Test
     void ifTrueExecutesBlock() {
         ScriptInterpreter interpreter = new ScriptInterpreter(false);
@@ -48,6 +60,9 @@ public class ScriptInterpreterControlFlowTest {
         assertTrue(interpreter.execute(script));
     }
 
+    /**
+     * Comprueba que los comandos de un OP_IF sean completamente evadidos cuando la condición es falsa.
+     */
     @Test
     void ifFalseSkipsBlock() {
         ScriptInterpreter interpreter = new ScriptInterpreter(false);
@@ -55,6 +70,9 @@ public class ScriptInterpreterControlFlowTest {
         assertTrue(interpreter.execute(script));
     }
 
+    /**
+     * Verifica el salto correcto a la rama OP_ELSE en caso de recibir una condición falsa en un OP_IF.
+     */
     @Test
     void ifElseExecutesElseBranch() {
         ScriptInterpreter interpreter = new ScriptInterpreter(false);
@@ -66,6 +84,9 @@ public class ScriptInterpreterControlFlowTest {
         assertTrue(interpreter.execute(script));
     }
 
+    /**
+     * Prueba exhaustiva del comportamiento del intérprete procesando bloques OP_IF anidados dentro de otros bloques OP_IF.
+     */
     @Test
     void nestedIfShouldWorkCorrectly() {
         ScriptInterpreter interpreter = new ScriptInterpreter(false);
@@ -79,6 +100,10 @@ public class ScriptInterpreterControlFlowTest {
         assertTrue(interpreter.execute(script));
     }
 
+    /**
+     * Ejecuta una prueba de caso integral que acopla matemática, condicionales y evaluación.
+     * La prueba simula cálculos en un bloque IF ignorando correctamente la rama ELSE.
+     */
     @Test
     void complexScriptShouldPass() {
         ScriptInterpreter interpreter = new ScriptInterpreter(false);
@@ -94,6 +119,9 @@ public class ScriptInterpreterControlFlowTest {
         assertTrue(interpreter.execute(script));
     }
 
+    /**
+     * Verifica la funcionalidad estándar y exitosa de la operación OP_ADD (Suma).
+     */
     @Test
     void addShouldWork() {
         ScriptInterpreter interpreter = new ScriptInterpreter(false);
@@ -106,6 +134,9 @@ public class ScriptInterpreterControlFlowTest {
         assertTrue(interpreter.execute(script));
     }
 
+    /**
+     * Verifica la funcionalidad estándar y exitosa de la operación OP_SUB (Resta).
+     */
     @Test
     void subShouldWork() {
         ScriptInterpreter interpreter = new ScriptInterpreter(false);
@@ -118,6 +149,9 @@ public class ScriptInterpreterControlFlowTest {
         assertTrue(interpreter.execute(script));
     }
 
+    /**
+     * Comprueba el fallo de un operador binario al recibir una pila sin elementos suficientes.
+     */
     @Test
     void addWithEmptyStackShouldFail() {
         ScriptInterpreter interpreter = new ScriptInterpreter(false);
@@ -125,6 +159,9 @@ public class ScriptInterpreterControlFlowTest {
         assertFalse(interpreter.execute(script));
     }
 
+    /**
+     * Comprueba el fallo del intérprete en operadores aritméticos cuando solo hay un elemento.
+     */
     @Test
     void subWithOneElementShouldFail() {
         ScriptInterpreter interpreter = new ScriptInterpreter(false);
@@ -132,6 +169,9 @@ public class ScriptInterpreterControlFlowTest {
         assertFalse(interpreter.execute(script));
     }
 
+    /**
+     * Asegura el soporte a sumar valor cero sin fallos aritméticos.
+     */
     @Test
     void addWithZeroShouldWork() {
         ScriptInterpreter interpreter = new ScriptInterpreter(false);
@@ -144,6 +184,9 @@ public class ScriptInterpreterControlFlowTest {
         assertTrue(interpreter.execute(script));
     }
 
+    /**
+     * Verifica el comportamiento apropiado con números y resultados negativos.
+     */
     @Test
     void negativeResultShouldWork() {
         ScriptInterpreter interpreter = new ScriptInterpreter(false);
@@ -156,6 +199,9 @@ public class ScriptInterpreterControlFlowTest {
         assertTrue(interpreter.execute(script));
     }
 
+    /**
+     * Evalúa la operación OP_BOOLAND resolviendo correctamente a 0 cuando hay escenarios dispares (true y false).
+     */
     @Test
     void boolAndFalseCase() {
         ScriptInterpreter interpreter = new ScriptInterpreter(false);
@@ -168,6 +214,9 @@ public class ScriptInterpreterControlFlowTest {
         assertTrue(interpreter.execute(script));
     }
 
+    /**
+     * Evalúa la operación OP_BOOLOR resolviendo a 0 cuando ambos escenarios son falsos (0 y 0).
+     */
     @Test
     void boolOrFalseCase() {
         ScriptInterpreter interpreter = new ScriptInterpreter(false);
@@ -180,6 +229,9 @@ public class ScriptInterpreterControlFlowTest {
         assertTrue(interpreter.execute(script));
     }
 
+    /**
+     * Asegura el lanzamiento de excepciones cuando se tratan de procesar operaciones matemáticas con tipos que no son representaciones numéricas.
+     */
     @Test
     void invalidTypeShouldThrowException() {
         ScriptInterpreter interpreter = new ScriptInterpreter(false);
