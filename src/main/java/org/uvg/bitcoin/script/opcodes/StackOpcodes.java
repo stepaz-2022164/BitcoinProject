@@ -3,7 +3,8 @@ package org.uvg.bitcoin.script.opcodes;
 import org.uvg.bitcoin.script.model.ExecutionContext;
 import org.uvg.bitcoin.script.util.ScriptUtils;
 
-import java.util.Iterator;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Implementación de todos los opcodes de manipulación de pila.
@@ -53,21 +54,30 @@ public class StackOpcodes {
     /**
      * OP_OVER: Copia el segundo elemento a la cima.
      * Antes: [x1, x2, ...] → Después: [x1, x2, x1, ...]
+     *
+     * Ejemplo: [bottom, top] → después de OVER: [bottom, top, bottom]
      */
     public static boolean over(ExecutionContext ctx, ScriptUtils utils) {
         if (ctx.stackSize() < 2) {
             return false;
         }
 
-        byte[] second = null;
-        Iterator<byte[]> it = ctx.getStack().iterator();
-
-        for (int i = 0; i < ctx.stackSize() - 2; i++) {
-            it.next();
+        // Guardar toda la pila temporalmente
+        List<byte[]> temp = new ArrayList<>();
+        while (!ctx.isStackEmpty()) {
+            temp.add(0, ctx.pop()); // Insertar al principio para mantener orden
         }
-        second = it.next();
 
-        ctx.push(utils.copyOf(second));
+        // temp ahora tiene [bottom, top] (bottom en índice 0, top en índice 1)
+
+        // Reconstruir la pila con OVER aplicado
+        for (byte[] item : temp) {
+            ctx.push(item);
+        }
+
+        // El segundo elemento es temp.get(0) (bottom)
+        ctx.push(utils.copyOf(temp.get(0))); // Copiar bottom a la cima
+
         return true;
     }
 }
