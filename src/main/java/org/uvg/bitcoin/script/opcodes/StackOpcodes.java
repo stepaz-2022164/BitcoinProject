@@ -73,22 +73,12 @@ public class StackOpcodes {
         if (ctx.stackSize() < 2) {
             return false;
         }
+        byte[] top = ctx.pop();
+        byte[] second = ctx.pop();
 
-        // Guardar toda la pila temporalmente
-        List<byte[]> temp = new ArrayList<>();
-        while (!ctx.isStackEmpty()) {
-            temp.add(0, ctx.pop()); // Insertar al principio para mantener orden
-        }
-
-        // temp ahora tiene [bottom, top] (bottom en índice 0, top en índice 1)
-
-        // Reconstruir la pila con OVER aplicado
-        for (byte[] item : temp) {
-            ctx.push(item);
-        }
-
-        // El segundo elemento es temp.get(0) (bottom)
-        ctx.push(utils.copyOf(temp.get(0))); // Copiar bottom a la cima
+        ctx.push(second);
+        ctx.push(top);
+        ctx.push(utils.copyOf(second));
 
         return true;
     }

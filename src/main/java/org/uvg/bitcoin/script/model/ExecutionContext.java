@@ -12,8 +12,6 @@ import java.util.Iterator;
 public class ExecutionContext {
     private final Deque<byte[]> stack;
     private final Deque<Boolean> ifStack;
-    private boolean executing;
-    private boolean skipElse;
     private final boolean trace;
     private final boolean stepByStep;
 
@@ -26,11 +24,10 @@ public class ExecutionContext {
     public ExecutionContext(boolean trace, boolean stepByStep) {
         this.stack = new ArrayDeque<>();
         this.ifStack = new ArrayDeque<>();
-        this.executing = true;
-        this.skipElse = false;
         this.trace = trace;
         this.stepByStep = stepByStep;
     }
+
 
     /**
      * Reinicia el contexto para una nueva ejecución.
@@ -38,8 +35,6 @@ public class ExecutionContext {
     public void reset() {
         stack.clear();
         ifStack.clear();
-        executing = true;
-        skipElse = false;
     }
 
     /**
@@ -112,27 +107,12 @@ public class ExecutionContext {
         return ifStack.isEmpty();
     }
 
-    /**
-     * Retorna el tamaño de la pila de control.
-     */
+    public boolean isExecuting() {
+        return !ifStack.contains(false);
+    }
+
     public int getIfStackSize() {
         return ifStack.size();
-    }
-
-    public boolean isExecuting() {
-        return executing;
-    }
-
-    public void setExecuting(boolean executing) {
-        this.executing = executing;
-    }
-
-    public boolean isSkipElse() {
-        return skipElse;
-    }
-
-    public void setSkipElse(boolean skipElse) {
-        this.skipElse = skipElse;
     }
 
     public boolean isTrace() {

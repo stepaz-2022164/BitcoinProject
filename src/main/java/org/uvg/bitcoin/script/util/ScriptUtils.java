@@ -21,9 +21,12 @@ public class ScriptUtils {
         if (val == null || val.length == 0) {
             return Optional.empty();
         }
-
         try {
             String str = new String(val).trim();
+            // Limpia el prefijo OP_ para poder hacer cálculos con cualquier número
+            if (str.startsWith("OP_")) {
+                str = str.substring(3);
+            }
             return Optional.of(Integer.parseInt(str));
         } catch (NumberFormatException e) {
             return Optional.empty();

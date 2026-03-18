@@ -136,89 +136,34 @@ public class ScriptInterpreter {
         return result;
     }
 
-    /**
-     * Maneja OP_IF y OP_NOTIF.
-     *
-     * @param token El comando condicional a evaluar (OP_IF o OP_NOTIF).
-     * @return true si pudo evaluar correctamente la instrucción, false si hay errores como pila vacía.
-     */
     private boolean handleIf(String token) {
-        context.pushIf(context.isExecuting());
-
-        if (context.isExecuting()) {
-            if (context.isStackEmpty()) {
-                if (context.isTrace()) {
-                    System.out.println(" ERROR: Pila vacía para condición");
-                }
-                return false;
-            }
-
-            boolean condition = utils.isTrue(context.pop());
-            if (token.equals("OP_NOTIF")) {
-                condition = !condition;
-            }
-            context.setExecuting(condition);
-            context.setSkipElse(false);
-        } else {
-            context.setExecuting(false);
-            context.setSkipElse(true);
+        if (!context.isExecuting()) {
+            context.pushIf(false);
+            return true;
         }
 
-        if (context.isTrace()) {
-            System.out.println(" IF/NOTIF: executing=" + context.isExecuting() +
-                    ", skipElse=" + context.isSkipElse());
-            printStack();
+        if (context.isStackEmpty()) return false;
+
+        boolean condition = utils.isTrue(context.pop());
+        if (token.equals("OP_NOTIF")) {
+            condition = !condition;
         }
 
+        context.pushIf(condition);
         return true;
     }
 
-    /**
-     * Maneja OP_ELSE.
-     *
-     * @return true si OP_ELSE se ejecutó dentro de un bloque condicional válido, false si no hay un OP_IF previo.
-     */
     private boolean handleElse() {
-        if (context.isIfStackEmpty()) {
-            if (context.isTrace()) {
-                System.out.println(" ERROR: OP_ELSE sin OP_IF");
-            }
-            return false;
-        }
+        if (context.isIfStackEmpty()) return false;
 
-        if (!context.isSkipElse()) {
-            context.setExecuting(!context.isExecuting());
-        }
-
-        if (context.isTrace()) {
-            System.out.println(" ELSE: executing=" + context.isExecuting());
-            printStack();
-        }
-
+        boolean current = context.popIf();
+        context.pushIf(!current);
         return true;
     }
 
-    /**
-     * Maneja OP_ENDIF.
-     *
-     * @return true si se cerró correctamente un bloque condicional, false si no había bloque abierto.
-     */
     private boolean handleEndIf() {
-        if (context.isIfStackEmpty()) {
-            if (context.isTrace()) {
-                System.out.println(" ERROR: OP_ENDIF sin OP_IF");
-            }
-            return false;
-        }
-
-        context.setExecuting(context.popIf());
-        context.setSkipElse(false);
-
-        if (context.isTrace()) {
-            System.out.println(" ENDIF: executing=" + context.isExecuting());
-            printStack();
-        }
-
+        if (context.isIfStackEmpty()) return false;
+        context.popIf();
         return true;
     }
 
