@@ -1,0 +1,5 @@
+org.uvg.bitcoin
+org.uvg.bitcoin.script
+org.uvg.bitcoin.script.model
+org.uvg.bitcoin.script.opcodes
+org.uvg.bitcoin.script.util
