@@ -1,511 +1,270 @@
 package org.uvg.bitcoin.script;
 
-import java.util.*;
-import java.util.function.Supplier;
+import org.uvg.bitcoin.script.model.ExecutionContext;
+import org.uvg.bitcoin.script.opcodes.Opcode;
+import org.uvg.bitcoin.script.opcodes.OpcodeRegistry;
+import org.uvg.bitcoin.script.util.ScriptUtils;
+
+import java.util.List;
+import java.util.Scanner;
 
 /**
- * Intérprete de un subconjunto de Bitcoin Script basado en pila (stack-based).
- *
- * Este intérprete evalúa scripts de izquierda a derecha utilizando una pila LIFO.
- * Implementa operaciones de manipulación de pila, aritmética, lógica, comparación
- * y control de flujo (OP_IF, OP_ELSE, OP_ENDIF).
- *
- * La ejecución es válida si:
- * - No ocurren errores durante la ejecución.
- * - La pila final no está vacía.
- * - El elemento en la cima de la pila es verdadero (distinto de cero).
- *
- * Incluye un modo de depuración (--trace) que imprime el estado de la pila
- * después de cada instrucción.
+ * Intérprete principal de Bitcoin Script.
+ * Esta clase coordina la ejecución de scripts utilizando un contexto de ejecución
+ * y un registro de opcodes.
  */
 public class ScriptInterpreter {
 
-    private final Deque<byte[]> stack;
-    private final boolean trace;
-    private final Map<String, Supplier<Boolean>> opcodeMap;
-    private final boolean stepByStep;
+    private final ExecutionContext context;
+    private final OpcodeRegistry opcodeRegistry;
+    private final ScriptUtils utils;
 
     /**
      * Constructor del intérprete.
      *
-     * @param trace Indica si se imprime el estado de la pila tras cada operación.
-     * @param stepByStep Indica si se pausa tras cada operación.
+     * @param trace       Indica si se imprime el estado de la pila tras cada operación
+     * @param stepByStep  Indica si se pausa tras cada operación
      */
     public ScriptInterpreter(boolean trace, boolean stepByStep) {
-        this.stack = new ArrayDeque<>();
-        this.trace = trace;
-        this.opcodeMap = new HashMap<>();
-        this.stepByStep = stepByStep;
-        initOpcodes();
+        this.context = new ExecutionContext(trace, stepByStep);
+        this.opcodeRegistry = new OpcodeRegistry();
+        this.utils = new ScriptUtils();
     }
 
     /**
      * Constructor de conveniencia sin modo paso a paso.
      *
-     * @param trace Indica si se imprime el estado de la pila tras cada operación.
+     * @param trace Indica si se imprime el estado de la pila tras cada operación
      */
     public ScriptInterpreter(boolean trace) {
         this(trace, false);
     }
 
     /**
-     * Inicializa todos los opcodes disponibles en el intérprete.
-     */
-    private void initOpcodes() {
-
-        for (int i = 0; i <= 16; i++) {
-            addOp(i);
-        }
-
-        opcodeMap.put("OP_DUP", this::opDup);
-        opcodeMap.put("OP_DROP", this::opDrop);
-        opcodeMap.put("OP_SWAP", this::opSwap);
-        opcodeMap.put("OP_OVER", this::opOver);
-
-        opcodeMap.put("OP_EQUAL", this::opEqual);
-        opcodeMap.put("OP_EQUALVERIFY", () -> {
-            if (!opEqual()) return false;
-            return opVerify();
-        });
-
-        opcodeMap.put("OP_HASH160", this::opHash160);
-        opcodeMap.put("OP_SHA256", this::opSha256);
-        opcodeMap.put("OP_HASH256", this::opHash256);
-        opcodeMap.put("OP_CHECKSIG", this::opCheckSig);
-        opcodeMap.put("OP_CHECKSIGVERIFY", () -> {
-            if (!opCheckSig()) return false;
-            return opVerify();
-        });
-
-        opcodeMap.put("OP_ADD", this::opAdd);
-        opcodeMap.put("OP_SUB", this::opSub);
-        opcodeMap.put("OP_NUMEQUALVERIFY", this::opNumEqualVerify);
-        opcodeMap.put("OP_LESSTHAN", this::opLessThan);
-        opcodeMap.put("OP_GREATERTHAN", this::opGreaterThan);
-        opcodeMap.put("OP_LESSTHANOREQUAL", this::opLessThanOrEqual);
-        opcodeMap.put("OP_GREATERTHANOREQUAL", this::opGreaterThanOrEqual);
-        opcodeMap.put("OP_NOT", this::opNot);
-        opcodeMap.put("OP_BOOLAND", this::opBoolAnd);
-        opcodeMap.put("OP_BOOLOR", this::opBoolOr);
-
-        opcodeMap.put("OP_VERIFY", this::opVerify);
-        opcodeMap.put("OP_RETURN", this::opReturn);
-    }
-
-    /**
-     * Agrega un opcode OP_n que empuja un número a la pila.
-     */
-    private void addOp(int value) {
-        opcodeMap.put("OP_" + value, () -> {
-            stack.push(String.valueOf(value).getBytes());
-            return true;
-        });
-    }
-
-    /**
-     * Ejecuta un script completo.
+     * Ejecuta un script completo con soporte para control de flujo anidado.
      *
-     * @param script Lista de tokens (opcodes o datos).
-     * @return true si el script es válido, false en caso contrario.
+     * @param script Lista de tokens (opcodes o datos)
+     * @return true si el script es válido, false en caso contrario
      */
     public boolean execute(List<String> script) {
+        context.reset();
 
-        Deque<Boolean> executionStack = new ArrayDeque<>();
+        if (context.isTrace()) {
+            System.out.println("\n=== INICIANDO EJECUCIÓN DEL SCRIPT ===");
+            System.out.println("Script: " + script);
+            System.out.println("======================================");
+        }
 
-        for (String token : script) {
+        for (int i = 0; i < script.size(); i++) {
+            String token = script.get(i);
 
-            boolean executing = !executionStack.contains(false);
-
-            if (token.equals("OP_IF")) {
-
-                if (!executing) {
-                    executionStack.push(false);
-                } else {
-                    if (stack.isEmpty()) return false;
-                    boolean condition = isTrue(stack.pop());
-                    executionStack.push(condition);
-                }
-                traceStep(token);
-                continue;
+            if (context.isTrace()) {
+                System.out.println("\n>>> Procesando [" + i + "]: " + token);
             }
 
-            if (token.equals("OP_NOTIF")) {
-
-                if (!executing) {
-                    executionStack.push(false);
-                } else {
-                    if (stack.isEmpty()) return false;
-                    executionStack.push(!isTrue(stack.pop()));
+            if (token.equals("OP_IF") || token.equals("OP_NOTIF")) {
+                if (!handleIf(token)) {
+                    return false;
                 }
-                traceStep(token);
                 continue;
             }
 
             if (token.equals("OP_ELSE")) {
-
-                if (executionStack.isEmpty()) return false;
-                boolean current = executionStack.pop();
-                executionStack.push(!current);
-                traceStep(token);
+                if (!handleElse()) {
+                    return false;
+                }
                 continue;
             }
 
             if (token.equals("OP_ENDIF")) {
-
-                if (executionStack.isEmpty()) return false;
-                executionStack.pop();
-                traceStep(token);
+                if (!handleEndIf()) {
+                    return false;
+                }
                 continue;
             }
 
-            if (!executing) {
-                continue;
+            if (context.isExecuting()) {
+                if (!processToken(token)) {
+                    if (context.isTrace()) {
+                        System.out.println(" ERROR: Falló al procesar " + token);
+                    }
+                    return false;
+                }
+            } else {
+                if (context.isTrace() && !token.startsWith("OP_")) {
+                    System.out.println(" Saltando dato: " + token);
+                }
             }
 
-            if (!processToken(token)) {
-                return false;
-            }
-
-            if (trace) {
-                System.out.println("\n>>> Procesando: " + token);
+            if (context.isTrace()) {
+                if (!token.startsWith("OP_") && context.isExecuting()) {
+                    System.out.println(" Dato empujado: " + token);
+                }
                 printStack();
 
-                if (stepByStep) {
-                    System.out.print("Presione [Enter] para el siguiente paso...");
+                if (context.isStepByStep()) {
+                    System.out.print("Presione Enter para continuar...");
                     try {
-                        Scanner sc = new Scanner(System.in);
-                        sc.nextLine();
+                        new Scanner(System.in).nextLine();
                     } catch (Exception e) { }
                 }
             }
         }
 
-        if (!executionStack.isEmpty()) return false;
-        if (stack.isEmpty()) return false;
-        return isTrue(stack.peek());
+        if (!context.isIfStackEmpty()) {
+            if (context.isTrace()) {
+                System.out.println(" ERROR: Faltan OP_ENDIF (" +
+                        context.getIfStackSize() + " niveles sin cerrar)");
+            }
+            return false;
+        }
+
+        if (context.isStackEmpty()) {
+            if (context.isTrace()) {
+                System.out.println(" ERROR: Pila vacía al final");
+            }
+            return false;
+        }
+
+        boolean result = utils.isTrue(context.peek());
+        if (context.isTrace()) {
+            System.out.println("\n=== RESULTADO FINAL ===");
+            System.out.println("Pila final:");
+            printStack();
+            System.out.println("¿Válido? " + (result ? "SÍ" : "NO"));
+        }
+        return result;
     }
 
     /**
-     * Procesa un token individual.
+     * Maneja OP_IF y OP_NOTIF.
+     */
+    private boolean handleIf(String token) {
+        context.pushIf(context.isExecuting());
+
+        if (context.isExecuting()) {
+            if (context.isStackEmpty()) {
+                if (context.isTrace()) {
+                    System.out.println(" ERROR: Pila vacía para condición");
+                }
+                return false;
+            }
+
+            boolean condition = utils.isTrue(context.pop());
+            if (token.equals("OP_NOTIF")) {
+                condition = !condition;
+            }
+            context.setExecuting(condition);
+            context.setSkipElse(false);
+        } else {
+            context.setExecuting(false);
+            context.setSkipElse(true);
+        }
+
+        if (context.isTrace()) {
+            System.out.println(" IF/NOTIF: executing=" + context.isExecuting() +
+                    ", skipElse=" + context.isSkipElse());
+            printStack();
+        }
+
+        return true;
+    }
+
+    /**
+     * Maneja OP_ELSE.
+     */
+    private boolean handleElse() {
+        if (context.isIfStackEmpty()) {
+            if (context.isTrace()) {
+                System.out.println(" ERROR: OP_ELSE sin OP_IF");
+            }
+            return false;
+        }
+
+        if (!context.isSkipElse()) {
+            context.setExecuting(!context.isExecuting());
+        }
+
+        if (context.isTrace()) {
+            System.out.println(" ELSE: executing=" + context.isExecuting());
+            printStack();
+        }
+
+        return true;
+    }
+
+    /**
+     * Maneja OP_ENDIF.
+     */
+    private boolean handleEndIf() {
+        if (context.isIfStackEmpty()) {
+            if (context.isTrace()) {
+                System.out.println(" ERROR: OP_ENDIF sin OP_IF");
+            }
+            return false;
+        }
+
+        context.setExecuting(context.popIf());
+        context.setSkipElse(false);
+
+        if (context.isTrace()) {
+            System.out.println(" ENDIF: executing=" + context.isExecuting());
+            printStack();
+        }
+
+        return true;
+    }
+
+    /**
+     * Procesa un token individual (opcode o dato).
      */
     private boolean processToken(String token) {
+        Opcode opcode = opcodeRegistry.getOpcode(token);
 
-        Supplier<Boolean> op = opcodeMap.get(token);
-
-        if (op != null) {
-            return op.get();
+        if (opcode != null) {
+            return opcode.execute(context);
         }
-
-        stack.push(token.getBytes());
+        context.push(token.getBytes());
         return true;
     }
 
     /**
-     * Duplica el elemento superior de la pila.
-     */
-    private boolean opDup() {
-
-        if (stack.isEmpty()) return false;
-
-        byte[] top = stack.peek();
-        stack.push(Arrays.copyOf(top, top.length));
-
-        return true;
-    }
-
-    /**
-     * Elimina el elemento superior de la pila.
-     */
-    private boolean opDrop() {
-        if (stack.isEmpty()) return false;
-        stack.pop();
-        return true;
-    }
-
-    /**
-     * Intercambia los dos elementos superiores de la pila.
-     */
-    private boolean opSwap() {
-        if (stack.size() < 2) return false;
-        byte[] top    = stack.pop();
-        byte[] second = stack.pop();
-        stack.push(top);
-        stack.push(second);
-        return true;
-    }
-
-    /**
-     * Copia el segundo elemento de la pila a la cima. Ejemplo: [a, b] -> [a, b, a]
-     */
-    private boolean opOver() {
-        if (stack.size() < 2) return false;
-        byte[] top    = stack.pop();
-        byte[] second = stack.peek();
-        stack.push(top);
-        stack.push(Arrays.copyOf(second, second.length));
-        return true;
-    }
-
-    /**
-     * Compara los dos elementos superiores.
-     */
-    private boolean opEqual() {
-        if (stack.size() < 2) return false;
-        byte[] a = stack.pop();
-        byte[] b = stack.pop();
-        boolean result = Arrays.equals(a, b);
-        stack.push(result ? "1".getBytes() : "0".getBytes());
-        return true;
-    }
-
-    /**
-     * Verifica que el valor superior sea verdadero.
-     */
-    private boolean opVerify() {
-        if (stack.isEmpty()) return false;
-        return isTrue(stack.pop());
-    }
-
-    /**
-     * Detiene la ejecución.
-     */
-    private boolean opReturn() {
-        return false;
-    }
-
-    /**
-     * Simula HASH160.
-     */
-    private boolean opHash160() {
-        if (stack.isEmpty()) return false;
-        byte[] data = stack.pop();
-
-        byte[] hash = ("HASH160_" + new String(data)).getBytes();
-
-        stack.push(hash);
-
-        return true;
-    }
-
-    /**
-     * Simula SHA256.
-     */
-    private boolean opSha256() {
-        if (stack.isEmpty()) return false;
-        byte[] data = stack.pop();
-        stack.push(("SHA256_" + new String(data)).getBytes());
-        return true;
-    }
-
-    /**
-     * Simula HASH256 (SHA256 doble).
-     */
-    private boolean opHash256() {
-        if (stack.isEmpty()) return false;
-        byte[] data = stack.pop();
-        stack.push(("HASH256_" + new String(data)).getBytes());
-        return true;
-    }
-
-    /**
-     * Simula verificación de firma.
-     */
-    private boolean opCheckSig() {
-        if (stack.size() < 2) return false;
-        byte[] pubKey = stack.pop();
-        byte[] signature = stack.pop();
-        boolean valid = new String(signature).contains("VALID");
-        stack.push(valid ? "1".getBytes() : "0".getBytes());
-        return true;
-    }
-
-    /**
-     * Suma dos valores.
-     */
-    private boolean opAdd() {
-        if (stack.size() < 2) return false;
-
-        Integer b = toInt(stack.pop());
-        Integer a = toInt(stack.pop());
-        if (a == null || b == null) return false;
-
-        stack.push(String.valueOf(a + b).getBytes());
-
-        return true;
-    }
-
-    /**
-     * Resta dos valores.
-     */
-    private boolean opSub() {
-        if (stack.size() < 2) return false;
-
-        Integer b = toInt(stack.pop());
-        Integer a = toInt(stack.pop());
-        if (a == null || b == null) return false;
-
-        stack.push(String.valueOf(a - b).getBytes());
-
-        return true;
-    }
-
-    /**
-     * Verifica que los dos elementos superiores sean numéricamente iguales.
-     */
-    private boolean opNumEqualVerify() {
-        if (stack.size() < 2) return false;
-        Integer b = toInt(stack.pop());
-        Integer a = toInt(stack.pop());
-        if (a == null || b == null) return false;
-        return a.equals(b);
-    }
-
-    /**
-     * Menor que.
-     */
-    private boolean opLessThan() {
-        if (stack.size() < 2) return false;
-        Integer b = toInt(stack.pop());
-        Integer a = toInt(stack.pop());
-        if (a == null || b == null) return false;
-        stack.push(fromInt(a < b ? 1 : 0));
-        return true;
-    }
-
-    /**
-     * Mayor que.
-     */
-    private boolean opGreaterThan() {
-        if (stack.size() < 2) return false;
-        Integer b = toInt(stack.pop());
-        Integer a = toInt(stack.pop());
-        if (a == null || b == null) return false;
-        stack.push(fromInt(a > b ? 1 : 0));
-        return true;
-    }
-
-    /**
-     * Menor o igual que.
-     */
-    private boolean opLessThanOrEqual() {
-        if (stack.size() < 2) return false;
-        Integer b = toInt(stack.pop());
-        Integer a = toInt(stack.pop());
-        if (a == null || b == null) return false;
-        stack.push(fromInt(a <= b ? 1 : 0));
-        return true;
-    }
-
-    /**
-     * Mayor o igual que.
-     */
-    private boolean opGreaterThanOrEqual() {
-        if (stack.size() < 2) return false;
-        Integer b = toInt(stack.pop());
-        Integer a = toInt(stack.pop());
-        if (a == null || b == null) return false;
-        stack.push(fromInt(a >= b ? 1 : 0));
-        return true;
-    }
-
-    /**
-     * Negación lógica.
-     */
-    private boolean opNot() {
-        if (stack.isEmpty()) return false;
-        Integer val = toInt(stack.pop());
-        if (val == null) return false;
-        stack.push(fromInt(val == 0 ? 1 : 0));
-        return true;
-    }
-
-    /**
-     * AND lógico.
-     */
-    private boolean opBoolAnd() {
-        if (stack.size() < 2) return false;
-        Integer b = toInt(stack.pop());
-        Integer a = toInt(stack.pop());
-        if (a == null || b == null) return false;
-        stack.push(fromInt((a != 0 && b != 0) ? 1 : 0));
-        return true;
-    }
-
-    /**
-     * OR lógico.
-     */
-    private boolean opBoolOr() {
-        if (stack.size() < 2) return false;
-        Integer b = toInt(stack.pop());
-        Integer a = toInt(stack.pop());
-        if (a == null || b == null) return false;
-        stack.push(fromInt((a != 0 || b != 0) ? 1 : 0));
-        return true;
-    }
-
-    /**
-     * Convierte byte[] a int de forma segura. Retorna null si no es numérico,
-     * en lugar de lanzar NumberFormatException que colapsaría el intérprete.
-     */
-    private Integer toInt(byte[] val) {
-        try {
-            return Integer.parseInt(new String(val));
-        } catch (NumberFormatException e) {
-            return null;
-        }
-    }
-
-    /**
-     * Convierte int a byte[].
-     */
-    private byte[] fromInt(int val) {
-        return String.valueOf(val).getBytes();
-    }
-
-    /**
-     * Determina si un valor es verdadero.
-     */
-    private boolean isTrue(byte[] value) {
-        if (value.length == 0) return false;
-        String s = new String(value).trim();
-        return !s.isEmpty() && !s.equals("0") && !s.equals("\u0000");
-    }
-
-    /**
-     * Imprime el estado de la pila si el modo trace está activo.
-     * Metodo extraído para cubrir también OP_IF, OP_NOTIF, OP_ELSE y OP_ENDIF.
-     */
-    private void traceStep(String token) {
-        if (!trace) return;
-        System.out.println("\n>>> Procesando: " + token);
-        printStack();
-        if (stepByStep) {
-            System.out.print("Presione [Enter] para el siguiente paso...");
-            try {
-                Scanner sc = new Scanner(System.in);
-                sc.nextLine();
-            } catch (Exception e) { }
-        }
-    }
-
-    /**
-     * Imprime el estado de la pila.
+     * Imprime el estado actual de la pila.
      */
     private void printStack() {
-        System.out.println("Stack Top ->");
-        for (byte[] item : stack) {
-            if (item.length == 1 && item[0] == 1) {
-                System.out.println("   <TRUE> (0x01)");
-            }
-
-            else if (item.length == 1 && item[0] == 0) {
-                System.out.println("   <FALSE> (0x00)");
-            }
-
-            else {
-                System.out.println("   [" + new String(item) + "]");
+        System.out.println("Stack:");
+        if (context.isStackEmpty()) {
+            System.out.println("   [vacía]");
+        } else {
+            int i = 0;
+            for (byte[] item : context.getStack()) {
+                String display;
+                if (item.length == 0) {
+                    display = "EMPTY (OP_0/FALSE)";
+                } else {
+                    display = new String(item);
+                    if (display.length() > 30) {
+                        display = display.substring(0, 27) + "...";
+                    }
+                }
+                System.out.println("   " + (i == 0 ? "→ " : "  ") + display);
+                i++;
             }
         }
-        System.out.println("--------------");
+        System.out.println("   " + "-".repeat(40));
+    }
+
+    /**
+     * Obtiene el tamaño actual de la pila (útil para pruebas).
+     */
+    public int getStackSize() {
+        return context.stackSize();
+    }
+
+    /**
+     * Limpia la pila (útil para pruebas).
+     */
+    public void clearStack() {
+        context.clearStack();
     }
 }
